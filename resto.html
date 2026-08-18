@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nicole — Console restaurant</title>
+<meta name="description" content="Console de gestion : carte, commandes en direct par table, spécifications clients et comptabilité des ventes." />
+<meta property="og:title" content="Nicole — Console restaurant" />
+<meta property="og:description" content="Gérez la carte, suivez les commandes par table et la comptabilité des ventes en direct." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=Manrope:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{--ink:#080705;--pane:#100d09;--sand:#ece4d5;--dim:#9d9280;--gold:#c9a227;--ember:#e0562f;--ok:#3fa06a;
+    --line:rgba(236,228,213,.13);--serif:"Cormorant Garamond",serif;--sans:"Manrope",system-ui,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--sand);font-family:var(--sans)}
+  #glcanvas{position:fixed;inset:0;z-index:0;opacity:.55}
+  .wrap{position:relative;z-index:2;padding:0 clamp(14px,3vw,40px) 80px}
+  header.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:16px 0;backdrop-filter:blur(16px);background:linear-gradient(rgba(8,7,5,.92),rgba(8,7,5,.6))}
+  .brand{font-family:var(--serif);font-size:22px;letter-spacing:.2em;text-transform:uppercase}
+  .brand span{color:var(--gold)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab,.btn{border:1px solid var(--line);background:rgba(236,228,213,.04);color:var(--sand);border-radius:999px;
+    padding:10px 17px;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:.3s}
+  .tab:hover,.btn:hover{background:rgba(236,228,213,.13)}
+  .tab[data-on="1"]{background:var(--sand);color:var(--ink);border-color:var(--sand)}
+  .btn.ember{background:var(--ember);border-color:var(--ember);color:#fff}
+  .btn.ember:hover{background:#fff;color:var(--ink)}
+  .btn.sm{padding:7px 13px;font-size:10.5px}
+  h1{font-family:var(--serif);font-weight:300;font-size:clamp(34px,6vw,72px);margin:26px 0 6px;line-height:1}
+  .sub{color:var(--dim);font-size:13.5px;margin:0 0 26px}
+  .panelview{display:none}.panelview[data-on="1"]{display:block}
+  .cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .kpi{border:1px solid var(--line);border-radius:20px;padding:20px;background:linear-gradient(160deg,rgba(236,228,213,.05),rgba(236,228,213,.01))}
+  .kpi small{display:block;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+  .kpi b{font-family:var(--serif);font-size:34px;font-weight:500;color:var(--gold)}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+  .box{border:1px solid var(--line);border-radius:20px;background:var(--pane);overflow:hidden}
+  .box .hd{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .box .hd h3{margin:0;font-family:var(--serif);font-size:22px;font-weight:500}
+  .box .bd{padding:16px 18px}
+  .thumb{aspect-ratio:4/3;background:#17130b;object-fit:cover;width:100%;display:block}
+  .price{font-family:var(--serif);font-size:22px;color:var(--gold)}
+  .muted{color:var(--dim);font-size:13px;line-height:1.6}
+  label{display:block;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin:14px 0 7px}
+  input,textarea,select{width:100%;background:rgba(236,228,213,.05);border:1px solid var(--line);color:var(--sand);
+    border-radius:13px;padding:12px 14px;font-family:var(--sans);font-size:14px;outline:none}
+  input:focus,textarea:focus,select:focus{border-color:var(--gold)}
+  .two{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+  .drop{border:1px dashed var(--line);border-radius:16px;padding:18px;text-align:center;color:var(--dim);cursor:pointer;font-size:13px}
+  .drop:hover{border-color:var(--gold);color:var(--sand)}
+  .ord{border:1px solid var(--line);border-radius:20px;background:var(--pane);padding:16px 18px;margin-bottom:14px}
+  .ord.new{border-color:rgba(224,86,47,.55);box-shadow:0 0 0 1px rgba(224,86,47,.18) inset}
+  .tno{font-family:var(--serif);font-size:30px;color:var(--gold);line-height:1}
+  .pill{border-radius:999px;padding:5px 11px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--line);color:var(--dim)}
+  .pill.new{background:rgba(224,86,47,.16);color:#f3a184;border-color:transparent}
+  .pill.prep{background:rgba(201,162,39,.16);color:#e2c561;border-color:transparent}
+  .pill.done{background:rgba(63,160,106,.16);color:#7fd0a4;border-color:transparent}
+  .it{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;align-items:flex-start}
+  .it .q{color:var(--gold);min-width:28px}
+  .spec{display:inline-block;margin-top:4px;font-size:12.5px;color:#f3c98a;background:rgba(201,162,39,.1);border-radius:10px;padding:5px 9px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .bar{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--ember),var(--gold))}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,26px);z-index:80;background:var(--sand);color:var(--ink);
+    padding:12px 20px;border-radius:999px;font-size:13px;opacity:0;transition:.35s;pointer-events:none}
+  .toast[data-on="1"]{opacity:1;transform:translate(-50%,0)}
+  .scrim{position:fixed;inset:0;background:rgba(4,3,2,.7);backdrop-filter:blur(4px);z-index:40;display:none}
+  .scrim[data-on="1"]{display:block}
+  .modal{position:fixed;z-index:50;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:88vh;overflow:auto;
+    background:var(--pane);border:1px solid var(--line);border-radius:24px;padding:22px;display:none}
+  .modal[data-on="1"]{display:block}
+  @media(max-width:640px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="glcanvas"></canvas>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Nicole<span>.</span> console</div>
+    <div class="tabs">
+      <button class="tab" data-v="orders" data-on="1">Commandes</button>
+      <button class="tab" data-v="menu">Carte</button>
+      <button class="tab" data-v="acc">Comptabilité</button>
+      <a class="btn" href="/index.html" target="_blank">Vue client</a>
+    </div>
+  </header>
+
+  <!-- COMMANDES -->
+  <section class="panelview" data-v="orders" data-on="1">
+    <h1>Commandes en direct</h1>
+    <p class="sub">Chaque commande arrive avec son numéro de table et les spécifications du client.</p>
+    <div class="cards" style="margin-bottom:24px">
+      <div class="kpi"><small>Nouvelles</small><b id="kNew">0</b></div>
+      <div class="kpi"><small>En préparation</small><b id="kPrep">0</b></div>
+      <div class="kpi"><small>Servies aujourd'hui</small><b id="kDone">0</b></div>
+      <div class="kpi"><small>CA du jour</small><b id="kDay">0</b></div>
+    </div>
+    <div id="orders"></div>
+  </section>
+
+  <!-- CARTE -->
+  <section class="panelview" data-v="menu">
+    <h1>Gestion de la carte</h1>
+    <p class="sub">Ajoutez, modifiez ou retirez un plat — photo hébergée sur Cloudinary, synchronisation instantanée sur les tablettes.</p>
+    <button class="btn ember" id="newDish" style="margin-bottom:20px">+ Nouveau plat</button>
+    <div class="grid" id="menu"></div>
+  </section>
+
+  <!-- COMPTA -->
+  <section class="panelview" data-v="acc">
+    <h1>Comptabilité</h1>
+    <p class="sub">Ventes enregistrées automatiquement à chaque commande envoyée.</p>
+    <div class="cards" style="margin-bottom:24px">
+      <div class="kpi"><small>CA total</small><b id="aTotal">0</b></div>
+      <div class="kpi"><small>CA aujourd'hui</small><b id="aDay">0</b></div>
+      <div class="kpi"><small>CA 7 jours</small><b id="aWeek">0</b></div>
+      <div class="kpi"><small>Ticket moyen</small><b id="aAvg">0</b></div>
+      <div class="kpi"><small>Commandes</small><b id="aCount">0</b></div>
+      <div class="kpi"><small>Plats vendus</small><b id="aItems">0</b></div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+      <div class="box"><div class="hd"><h3>Meilleures ventes</h3></div><div class="bd"><table><thead>
+        <tr><th>Plat</th><th>Qté</th><th>CA</th></tr></thead><tbody id="tTop"></tbody></table></div></div>
+      <div class="box"><div class="hd"><h3>Ventes par jour</h3></div><div class="bd"><table><thead>
+        <tr><th>Jour</th><th>Cmd</th><th>CA</th><th></th></tr></thead><tbody id="tDays"></tbody></table></div></div>
+      <div class="box"><div class="hd"><h3>Journal des ventes</h3><button class="btn sm" id="csv">Export CSV</button></div>
+        <div class="bd" style="max-height:420px;overflow:auto"><table><thead>
+        <tr><th>Date</th><th>Table</th><th>Articles</th><th>Montant</th></tr></thead><tbody id="tJournal"></tbody></table></div></div>
+    </div>
+  </section>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="modal" id="modal">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="font-family:var(--serif);font-weight:400;font-size:26px;margin:0" id="mTitle">Nouveau plat</h3>
+    <button class="btn sm" id="mClose">Fermer</button>
+  </div>
+  <label>Nom du plat *</label><input id="fName" placeholder="Poulet braisé" />
+  <div class="two">
+    <div><label>Prix *</label><input id="fPrice" inputmode="numeric" placeholder="5000" /></div>
+    <div><label>Catégorie</label><input id="fCat" placeholder="Plats, Entrées, Boissons…" /></div>
+  </div>
+  <label>Description</label><textarea id="fDesc" rows="3" placeholder="Mariné 12h, sauce piment maison, attiéké."></textarea>
+  <label>Photo du plat</label>
+  <div class="drop" id="drop">Cliquer pour choisir une image (upload Cloudinary)</div>
+  <input type="file" id="file" accept="image/*" style="display:none" />
+  <img id="prev" class="thumb" style="display:none;border-radius:14px;margin-top:12px" alt="" />
+  <label><input type="checkbox" id="fAvail" checked style="width:auto;margin-right:8px" /> Disponible sur la carte</label>
+  <button class="btn ember" id="save" style="width:100%;margin-top:18px">Enregistrer</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+/* ------------------------------------------------------------------ CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyBgN3IZkKy6RFnnCOFwOrFkowXI5KTAPbA",   // clé Web Firebase (publique)
+  authDomain: "restaurant-nicole-dad7e.firebaseapp.com",
+  projectId: "restaurant-nicole-dad7e",
+  storageBucket: "restaurant-nicole-dad7e.firebasestorage.app",
+  messagingSenderId: "408362553394",
+  appId: "1:408362553394:web:2baa0ac7c850d61b67ac2b",
+  measurementId: "G-9V7Z8N1W7P"
+};
+const CLOUDINARY = { cloudName: 'djxcqczh1', uploadPreset: 'database' };
+const CURRENCY = "FCFA";
+const db = getFirestore(initializeApp(firebaseConfig));
+
+/* -------------------------------------------------------------- WEBGL BACK */
+(function gl(){
+  const canvas=document.getElementById('glcanvas');
+  const r=new THREE.WebGLRenderer({canvas,antialias:true});
+  r.setPixelRatio(Math.min(devicePixelRatio,2));
+  const sc=new THREE.Scene(),cam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const u={uT:{value:0},uRes:{value:new THREE.Vector2()}};
+  sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({uniforms:u,
+    vertexShader:`void main(){gl_Position=vec4(position,1.);}`,
+    fragmentShader:`precision highp float;uniform float uT;uniform vec2 uRes;
+      float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+      float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+        return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+      void main(){vec2 uv=(gl_FragCoord.xy-.5*uRes)/uRes.y;
+        float f=0.,a=.5,t=uT*.03;vec2 p=uv*2.2;
+        for(int i=0;i<5;i++){f+=a*n(p+vec2(t,-t));p*=2.02;a*=.5;}
+        vec3 c=mix(vec3(.031,.027,.02),vec3(.14,.09,.04),smoothstep(.25,1.,f));
+        c+=vec3(.55,.35,.1)*pow(max(0.,1.-length(uv+vec2(.6,-.4))),4.)*.25;
+        gl_FragColor=vec4(c,1.);}`})));
+  const s=()=>{r.setSize(innerWidth,innerHeight);u.uRes.value.set(innerWidth,innerHeight);};
+  s();addEventListener('resize',s);
+  r.setAnimationLoop(()=>{u.uT.value+=.016;r.render(sc,cam);});
+})();
+
+/* ------------------------------------------------------------------ HELPERS */
+const $=s=>document.querySelector(s);
+const money=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n||0))+" "+CURRENCY;
+const esc=s=>String(s||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+const toast=m=>{const t=$("#toast");t.textContent=m;t.dataset.on="1";clearTimeout(t._x);t._x=setTimeout(()=>t.dataset.on="0",2400);};
+const ms=o=>o.createdAtMs || (o.createdAt?.toMillis?.() ?? 0);
+const dayKey=t=>new Date(t).toISOString().slice(0,10);
+const fmtDate=t=>t?new Date(t).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):"—";
+
+document.querySelectorAll(".tab[data-v]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab[data-v]").forEach(x=>x.dataset.on=x===b?"1":"0");
+  document.querySelectorAll(".panelview").forEach(p=>p.dataset.on=p.dataset.v===b.dataset.v?"1":"0");
+  gsap.from(`.panelview[data-v="${b.dataset.v}"] > *`,{y:24,opacity:0,duration:.7,stagger:.05,ease:"expo.out"});
+});
+
+/* --------------------------------------------------------------------- MENU */
+let dishes=[], editId=null, imageUrl="";
+onSnapshot(query(collection(db,"dishes"),orderBy("createdAt","desc")),
+  s=>{dishes=s.docs.map(d=>({id:d.id,...d.data()}));renderMenu();},
+  e=>{console.error(e);toast("Lecture de la carte impossible");});
+
+function renderMenu(){
+  $("#menu").innerHTML = dishes.length ? dishes.map(d=>`
+    <div class="box">
+      ${d.image?`<img class="thumb" src="${esc(d.image)}" alt="${esc(d.name)}" />`:`<div class="thumb"></div>`}
+      <div class="bd">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+          <h3 style="margin:0;font-family:var(--serif);font-size:22px">${esc(d.name)}</h3>
+          <span class="price">${money(d.price)}</span>
+        </div>
+        <p class="muted">${esc(d.category||"—")} · ${d.available===false?"Retiré de la carte":"Disponible"}</p>
+        <p class="muted">${esc(d.description||"")}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn sm" data-e="${d.id}">Modifier</button>
+          <button class="btn sm" data-t="${d.id}">${d.available===false?"Remettre":"Retirer"}</button>
+          <button class="btn sm" data-d="${d.id}">Supprimer</button>
+        </div>
+      </div>
+    </div>`).join("") : `<div class="box"><div class="bd muted">Aucun plat pour le moment — commencez par « Nouveau plat ».</div></div>`;
+  $("#menu").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>openModal(b.dataset.e));
+  $("#menu").querySelectorAll("[data-t]").forEach(b=>b.onclick=async()=>{
+    const d=dishes.find(x=>x.id===b.dataset.t);
+    await updateDoc(doc(db,"dishes",d.id),{available:d.available===false});toast("Carte mise à jour");});
+  $("#menu").querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{
+    if(confirm("Supprimer ce plat définitivement ?")){await deleteDoc(doc(db,"dishes",b.dataset.d));toast("Plat supprimé");}});
+}
+
+function openModal(id){
+  editId=id||null; const d=id?dishes.find(x=>x.id===id):null;
+  $("#mTitle").textContent=id?"Modifier le plat":"Nouveau plat";
+  $("#fName").value=d?.name||""; $("#fPrice").value=d?.price??""; $("#fCat").value=d?.category||"";
+  $("#fDesc").value=d?.description||""; $("#fAvail").checked=d?d.available!==false:true;
+  imageUrl=d?.image||""; const p=$("#prev"); p.style.display=imageUrl?"block":"none"; p.src=imageUrl||"";
+  $("#modal").dataset.on="1"; $("#scrim").dataset.on="1";
+  gsap.from("#modal",{y:24,opacity:0,duration:.5,ease:"expo.out"});
+}
+const closeModal=()=>{$("#modal").dataset.on="0";$("#scrim").dataset.on="0";};
+$("#newDish").onclick=()=>openModal(null); $("#mClose").onclick=closeModal; $("#scrim").onclick=closeModal;
+$("#drop").onclick=()=>$("#file").click();
+$("#file").onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  $("#drop").textContent="Upload en cours…";
+  try{
+    const fd=new FormData(); fd.append("file",f); fd.append("upload_preset",CLOUDINARY.uploadPreset);
+    const r=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`,{method:"POST",body:fd});
+    const j=await r.json(); if(!j.secure_url) throw new Error(j.error?.message||"upload");
+    imageUrl=j.secure_url; $("#prev").src=imageUrl; $("#prev").style.display="block";
+    $("#drop").textContent="Image envoyée — cliquer pour remplacer";
+  }catch(err){console.error(err);$("#drop").textContent="Échec de l'upload — réessayer";toast("Upload image échoué");}
+};
+$("#save").onclick=async()=>{
+  const name=$("#fName").value.trim(), price=parseFloat($("#fPrice").value);
+  if(!name||isNaN(price)) return toast("Nom et prix obligatoires");
+  const data={name,price,category:$("#fCat").value.trim(),description:$("#fDesc").value.trim(),
+    image:imageUrl,available:$("#fAvail").checked,updatedAt:serverTimestamp()};
+  try{
+    if(editId) await updateDoc(doc(db,"dishes",editId),data);
+    else await addDoc(collection(db,"dishes"),{...data,createdAt:serverTimestamp(),createdAtMs:Date.now()});
+    closeModal(); toast(editId?"Plat modifié":"Plat ajouté");
+  }catch(e){console.error(e);toast("Enregistrement impossible");}
+};
+
+/* ----------------------------------------------------------------- ORDERS */
+let orders=[];
+onSnapshot(query(collection(db,"orders"),orderBy("createdAtMs","desc")),
+  s=>{orders=s.docs.map(d=>({id:d.id,...d.data()}));renderOrders();renderAcc();},
+  e=>{console.error(e);toast("Lecture des commandes impossible");});
+
+const STATUS={nouvelle:["new","Nouvelle"],preparation:["prep","En préparation"],servie:["done","Servie"],annulee:["","Annulée"]};
+function renderOrders(){
+  const today=dayKey(Date.now());
+  $("#kNew").textContent=orders.filter(o=>o.status==="nouvelle").length;
+  $("#kPrep").textContent=orders.filter(o=>o.status==="preparation").length;
+  $("#kDone").textContent=orders.filter(o=>o.status==="servie"&&dayKey(ms(o))===today).length;
+  $("#kDay").textContent=money(orders.filter(o=>o.status!=="annulee"&&dayKey(ms(o))===today).reduce((s,o)=>s+(o.total||0),0));
+
+  $("#orders").innerHTML = orders.length ? orders.map(o=>{
+    const [cls,lbl]=STATUS[o.status]||["","—"];
+    return `<div class="ord ${o.status==="nouvelle"?"new":""}">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:14px;align-items:center">
+          <div><div class="muted" style="font-size:10.5px;letter-spacing:.2em;text-transform:uppercase">Table</div>
+            <div class="tno">${esc(o.table)}</div></div>
+          <div><span class="pill ${cls}">${lbl}</span>
+            <div class="muted" style="margin-top:6px">${fmtDate(ms(o))} · ${o.itemsCount||0} article(s)</div></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="price">${money(o.total)}</span>
+          <button class="btn sm" data-s="preparation" data-o="${o.id}">En préparation</button>
+          <button class="btn sm" data-s="servie" data-o="${o.id}">Servie</button>
+          <button class="btn sm" data-s="annulee" data-o="${o.id}">Annuler</button>
+        </div>
+      </div>
+      ${(o.items||[]).map(i=>`<div class="it"><span class="q">${i.qty}×</span><span style="flex:1">
+        ${esc(i.name)} <span class="muted">— ${money(i.price*i.qty)}</span>
+        ${i.spec?`<br><span class="spec">Spécification : ${esc(i.spec)}</span>`:""}</span></div>`).join("")}
+      ${o.note?`<div class="it"><span class="spec">Note table : ${esc(o.note)}</span></div>`:""}
+    </div>`;}).join("") : `<div class="box"><div class="bd muted">Aucune commande pour l'instant.</div></div>`;
+
+  $("#orders").querySelectorAll("[data-o]").forEach(b=>b.onclick=async()=>{
+    await updateDoc(doc(db,"orders",b.dataset.o),{status:b.dataset.s});toast("Statut mis à jour");});
+}
+
+/* ------------------------------------------------------------ ACCOUNTING */
+function renderAcc(){
+  const sales=orders.filter(o=>o.status!=="annulee");
+  const total=sales.reduce((s,o)=>s+(o.total||0),0);
+  const today=dayKey(Date.now()), weekAgo=Date.now()-6*864e5;
+  const items=sales.reduce((s,o)=>s+(o.itemsCount||0),0);
+  $("#aTotal").textContent=money(total);
+  $("#aDay").textContent=money(sales.filter(o=>dayKey(ms(o))===today).reduce((s,o)=>s+(o.total||0),0));
+  $("#aWeek").textContent=money(sales.filter(o=>ms(o)>=weekAgo).reduce((s,o)=>s+(o.total||0),0));
+  $("#aAvg").textContent=money(sales.length?total/sales.length:0);
+  $("#aCount").textContent=sales.length; $("#aItems").textContent=items;
+
+  const top={};
+  sales.forEach(o=>(o.items||[]).forEach(i=>{
+    top[i.name]=top[i.name]||{qty:0,ca:0}; top[i.name].qty+=i.qty; top[i.name].ca+=i.qty*i.price;}));
+  const tops=Object.entries(top).sort((a,b)=>b[1].ca-a[1].ca).slice(0,10);
+  $("#tTop").innerHTML=tops.length?tops.map(([n,v])=>
+    `<tr><td>${esc(n)}</td><td>${v.qty}</td><td>${money(v.ca)}</td></tr>`).join(""):`<tr><td colspan="3" class="muted">—</td></tr>`;
+
+  const days={};
+  sales.forEach(o=>{const k=dayKey(ms(o));days[k]=days[k]||{n:0,ca:0};days[k].n++;days[k].ca+=o.total||0;});
+  const ds=Object.entries(days).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
+  const max=Math.max(1,...ds.map(d=>d[1].ca));
+  $("#tDays").innerHTML=ds.length?ds.map(([k,v])=>
+    `<tr><td>${new Date(k).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}</td><td>${v.n}</td>
+     <td>${money(v.ca)}</td><td style="width:34%"><div class="bar" style="width:${(v.ca/max*100).toFixed(0)}%"></div></td></tr>`
+    ).join(""):`<tr><td colspan="4" class="muted">—</td></tr>`;
+
+  $("#tJournal").innerHTML=sales.length?sales.map(o=>
+    `<tr><td>${fmtDate(ms(o))}</td><td>${esc(o.table)}</td><td>${o.itemsCount||0}</td><td>${money(o.total)}</td></tr>`
+    ).join(""):`<tr><td colspan="4" class="muted">—</td></tr>`;
+
+  $("#csv").onclick=()=>{
+    const rows=[["Date","Table","Articles","Montant","Statut","Détail"],
+      ...sales.map(o=>[new Date(ms(o)).toISOString(),o.table,o.itemsCount||0,o.total||0,o.status,
+        (o.items||[]).map(i=>`${i.qty}x ${i.name}${i.spec?" ("+i.spec+")":""}`).join(" | ")])];
+    const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download=`ventes-nicole-${today}.csv`; a.click();
+  };
+}
+gsap.from(".top",{y:-30,opacity:0,duration:.8,ease:"expo.out"});
+</script>
+</body>
+</html>
