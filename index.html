@@ -203,8 +203,6 @@
     <label class="lbl">Numéro de table *</label>
     <input id="table" inputmode="numeric" placeholder="ex. 12" />
     <p class="hint">Votre <b>numéro de table</b> est indiqué <b>juste à côté du QR code</b> posé sur la table. Il est obligatoire pour que le service vous trouve.</p>
-    <label class="lbl">Note générale (optionnel)</label>
-    <textarea id="note" rows="2" placeholder="Allergies, service simultané, anniversaire…"></textarea>
   </div>
   <footer>
     <div class="total"><span>Total</span><b id="total">0</b></div>
@@ -364,11 +362,10 @@ function renderGrid(){
 }
 
 /* -------------------------------------------------------------------- CART */
-const QUICK = ["Beaucoup de piment","Sans piment","Peu de sel","Bien cuit","Saignant","Sans oignon","À emporter"];
 function add(id, variant=""){
   const d = dishes.find(x=>x.id===id); if(!d) return;
   const line = cart.find(l=>l.id===id && (l.variant||"")===(variant||""));
-  line ? line.qty++ : cart.push({id, name:d.name, price:+d.price||0, image:d.image||"", qty:1, spec:"", variant:variant||""});
+  line ? line.qty++ : cart.push({id, name:d.name, price:+d.price||0, image:d.image||"", qty:1, variant:variant||""});
   renderCart(); toast(`${d.name}${variant?" — "+variant:""} ajouté`); openCart();
 }
 function renderCart(){
@@ -384,18 +381,12 @@ function renderCart(){
           <span class="qty"><button data-m="${i}">−</button><span>${l.qty}</span><button data-p="${i}">+</button></span>
           <span class="price" style="font-size:18px">${money(l.qty*l.price)}</span>
         </div>
-        <label class="lbl">Spécifications pour ce plat</label>
-        <textarea rows="2" data-s="${i}" placeholder="ex. beaucoup de piment, sans oignon…">${l.spec||""}</textarea>
-        <div class="quick">${QUICK.map(q=>`<button data-q="${i}" data-v="${q}">${q}</button>`).join("")}</div>
       </div>
     </div>`).join("") : `<div class="empty">Votre commande est vide — choisissez un plat sur la carte.</div>`;
 
   $("#cartItems").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const i=+b.dataset.m;
     cart[i].qty--; if(cart[i].qty<1) cart.splice(i,1); renderCart();});
   $("#cartItems").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{cart[+b.dataset.p].qty++;renderCart();});
-  $("#cartItems").querySelectorAll("[data-s]").forEach(t=>t.oninput=()=>{cart[+t.dataset.s].spec=t.value;});
-  $("#cartItems").querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{const i=+b.dataset.q;
-    const cur=cart[i].spec||""; cart[i].spec = cur ? (cur.includes(b.dataset.v)?cur:cur+", "+b.dataset.v) : b.dataset.v; renderCart();});
 }
 const openCart=()=>{$("#panel").dataset.on="1";$("#scrim").dataset.on="1";document.body.classList.add("locked");};
 const closeCart=()=>{$("#panel").dataset.on="0";$("#scrim").dataset.on="0";document.body.classList.remove("locked");};
@@ -414,13 +405,13 @@ $("#send").onclick = async () => {
   $("#send").disabled = true; $("#send").textContent = "Envoi…";
   try{
     await addDoc(collection(db,"orders"),{
-      table, note:($("#note").value||"").trim(), status:"nouvelle",
-      items: cart.map(l=>({dishId:l.id,name:l.name,price:l.price,qty:l.qty,spec:l.spec||"",image:l.image||"",variant:l.variant||""})),
+      table, status:"nouvelle",
+      items: cart.map(l=>({dishId:l.id,name:l.name,price:l.price,qty:l.qty,image:l.image||"",variant:l.variant||""})),
       itemsCount: cart.reduce((s,l)=>s+l.qty,0), total,
       createdAt: serverTimestamp(), createdAtMs: Date.now()
     });
     $("#okMsg").textContent = `Table ${table} · ${money(total)} — la cuisine prépare votre commande.`;
-    $("#ok").dataset.on="1"; closeCart(); cart=[]; $("#note").value=""; renderCart();
+    $("#ok").dataset.on="1"; closeCart(); cart=[]; renderCart();
     gsap.from("#ok h3",{y:60,opacity:0,duration:1,ease:"expo.out"});
   }catch(e){ console.error(e); toast("Échec de l'envoi — réessayez"); }
   $("#send").disabled = false; $("#send").textContent = "Envoyer en cuisine";
