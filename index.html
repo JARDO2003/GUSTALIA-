@@ -394,7 +394,7 @@ $("#lightbox").onclick=()=>{$("#lightbox").dataset.on="0";};
 $("#lightboxClose").onclick=(e)=>{e.stopPropagation(); $("#lightbox").dataset.on="0";};
 
 /* ------------------------------------------------------------------- ORDER */
-$("#send").onclick = async () => {
+const sendOrder = async () => {
   if(!cart.length) return toast("Ajoutez au moins un plat");
   const table = ($("#table").value||"").trim();
   if(!table){ toast("Numéro de table obligatoire (à côté du QR code)"); $("#table").focus();
@@ -414,6 +414,11 @@ $("#send").onclick = async () => {
   }catch(e){ console.error(e); toast("Échec de l'envoi — réessayez"); }
   $("#send").disabled = false; $("#send").textContent = "Envoyer en cuisine";
 };
+$("#send").onclick = sendOrder;
+$("#table").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ e.preventDefault(); sendOrder(); }
+});
+$("#table").addEventListener("focus", ()=> toast("Regardez à côté du QR code pour trouver votre numéro de table"));
 $("#okClose").onclick=()=>$("#ok").dataset.on="0";
 renderCart();
 </script>
