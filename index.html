@@ -30,7 +30,7 @@
   header.nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
     padding:18px clamp(16px,4vw,48px);backdrop-filter:blur(14px);background:linear-gradient(to bottom,rgba(11,9,6,.75),rgba(11,9,6,0));}
   .brand{font-family:var(--serif);font-size:22px;letter-spacing:.22em;text-transform:uppercase;display:flex;align-items:center;gap:12px}
-  .brand-logo{height:38px;width:auto;display:block;border-radius:8px;cursor:zoom-in}
+  .brand-logo{height:44px;width:auto;max-width:150px;display:block;object-fit:contain;border-radius:8px;cursor:zoom-in;image-rendering:auto}
   .lightbox{position:fixed;inset:0;z-index:65;display:none;place-items:center;background:rgba(6,5,3,.92);backdrop-filter:blur(10px);padding:24px;cursor:zoom-out}
   .lightbox[data-on="1"]{display:grid}
   .lightbox img{max-width:min(92vw,560px);max-height:86vh;border-radius:18px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -133,7 +133,7 @@
 <div class="grain"></div>
 
 <header class="nav">
-  <div class="brand"><img class="brand-logo" id="brandLogo" src="logo.png" alt="Logo Gustalia" />Gustalia<span>.</span></div>
+  <div class="brand"><img class="brand-logo" id="brandLogo" src="logo.png" alt="Logo Gustalia" loading="eager" fetchpriority="high" onerror="this.style.display='none'" />Gustalia<span>.</span></div>
   <nav class="nav-actions">
     <button class="btn ghost" data-scroll="#carte">Carte</button>
     <button class="btn ember" id="openCart">Commande<span class="badge" id="cartCount">0</span></button>
@@ -278,9 +278,16 @@ document.querySelectorAll("[data-scroll]").forEach(b=>b.onclick=()=>
 let dishes = [], cat = "Tout", cart = [];
 const money = n => new Intl.NumberFormat('fr-FR').format(Math.round(n||0)) + " " + CURRENCY;
 const $ = s => document.querySelector(s);
+// Renvoie une version compressée / redimensionnée de l'image (via Cloudinary) pour un chargement rapide
+function optImg(url, w){
+  if(!url) return url;
+  const m = url.match(/^(https?:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.*)$/);
+  if(!m) return url;
+  return m[1] + `f_auto,q_auto,w_${w},c_fill/` + m[2];
+}
 const toast = m => { const t=$("#toast"); t.textContent=m; t.dataset.on="1"; clearTimeout(t._x); t._x=setTimeout(()=>t.dataset.on="0",2200); };
 
-onSnapshot(query(collection(db,"dishes"), orderBy("createdAt","desc")),
+onSnapshot(query(collection(db,"dishes"), orderBy("createdAt","asc")),
   snap => { dishes = snap.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.available!==false); renderCats(); renderGrid(); },
   err => { console.error(err); toast("Connexion à la carte impossible"); });
 
@@ -295,7 +302,7 @@ function renderGrid(){
   $("#grid").innerHTML = items.map(d=>`
     <article class="card" data-id="${d.id}">
       <div class="ph">
-        ${d.image?`<img src="${d.image}" alt="${(d.name||'').replace(/"/g,'')}" loading="lazy" />`:``}
+        ${d.image?`<img src="${optImg(d.image,600)}" alt="${(d.name||'').replace(/"/g,'')}" loading="lazy" decoding="async" />`:``}
         ${d.category?`<span class="tag">${d.category}</span>`:``}
       </div>
       <div class="body">
@@ -344,7 +351,7 @@ function renderCart(){
   $("#total").textContent = money(cart.reduce((s,l)=>s+l.qty*l.price,0));
   $("#cartItems").innerHTML = cart.length ? cart.map((l,i)=>`
     <div class="li">
-      ${l.image?`<img src="${l.image}" alt="${(l.name||'').replace(/"/g,'')}" />`:`<img alt="" />`}
+      ${l.image?`<img src="${optImg(l.image,150)}" alt="${(l.name||'').replace(/"/g,'')}" loading="lazy" decoding="async" />`:`<img alt="" />`}
       <div class="g">
         <h4>${l.name}${l.variant?` <span style="color:var(--gold);font-size:14px;font-weight:400">— ${l.variant}</span>`:""}</h4>
         <div class="row">
