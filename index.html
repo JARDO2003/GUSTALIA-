@@ -73,6 +73,13 @@
   .tag{position:absolute;top:14px;left:14px;background:rgba(11,9,6,.7);border:1px solid var(--line);border-radius:999px;
     padding:6px 12px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;backdrop-filter:blur(6px)}
   .empty{border:1px dashed var(--line);border-radius:20px;padding:40px;text-align:center;color:var(--sand-dim)}
+  .variants{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:none}
+  .variants[data-open="1"]{display:block}
+  .variants .lbl{margin:0 0 8px}
+  .vopts{display:flex;flex-wrap:wrap;gap:8px}
+  .vopt{border:1px solid var(--line);background:rgba(233,224,207,.04);color:var(--sand);border-radius:999px;
+    padding:8px 14px;font-size:12px;cursor:pointer;transition:.25s}
+  .vopt:hover{background:var(--gold);color:var(--ink);border-color:var(--gold)}
   /* MARQUEE */
   .marquee{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0}
   .marquee div{display:flex;gap:44px;white-space:nowrap;font-family:var(--serif);font-size:clamp(28px,5vw,64px);color:rgba(233,224,207,.25)}
@@ -202,7 +209,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
 /* ------------------------------------------------------------------ CONFIG */
 const firebaseConfig = {
-  apiKey: "AIzaSyBgN3IZkKy6RFnnCOFwOrFkowXI5KTAPbA",   // clé Web Firebase (publique)
+  apiKey: "AIzaSyBn-REPLACE-WITH-YOUR-WEB-API-KEY",   // clé Web Firebase (publique)
   authDomain: "restaurant-nicole-dad7e.firebaseapp.com",
   projectId: "restaurant-nicole-dad7e",
   storageBucket: "restaurant-nicole-dad7e.firebasestorage.app",
@@ -291,14 +298,26 @@ function renderGrid(){
         <p class="desc">${d.description||""}</p>
         <div class="row">
           <span class="price">${money(d.price)}</span>
-          <button class="btn ember add">Ajouter</button>
+          <button class="btn ember add">${d.variants&&d.variants.length?"Choisir":"Ajouter"}</button>
         </div>
+        ${d.variants&&d.variants.length?`<div class="variants" data-open="0">
+          <label class="lbl">Choisissez une option</label>
+          <div class="vopts">${d.variants.map(v=>`<button class="vopt" data-v="${String(v).replace(/"/g,'')}">${v}</button>`).join("")}</div>
+        </div>`:``}
       </div>
     </article>`).join("");
   gsap.to("#grid .card",{opacity:1,y:0,duration:.9,stagger:.06,ease:"expo.out",
     scrollTrigger:{trigger:"#grid",start:"top 92%"}});
   $("#grid").querySelectorAll(".card").forEach(c=>{
-    c.querySelector(".add").onclick=()=>add(c.dataset.id);
+    c.querySelector(".add").onclick=()=>{
+      const vp=c.querySelector(".variants");
+      if(vp){ vp.dataset.open = vp.dataset.open==="1"?"0":"1"; }
+      else add(c.dataset.id);
+    };
+    c.querySelectorAll(".vopt").forEach(b=>b.onclick=()=>{
+      add(c.dataset.id, b.dataset.v);
+      c.querySelector(".variants").dataset.open="0";
+    });
     c.addEventListener("pointermove",e=>{const r=c.getBoundingClientRect();
       gsap.to(c,{rotateX:-(e.clientY-r.top-r.height/2)/28,rotateY:(e.clientX-r.left-r.width/2)/28,
         transformPerspective:900,duration:.5,ease:"power2.out"});});
@@ -308,11 +327,11 @@ function renderGrid(){
 
 /* -------------------------------------------------------------------- CART */
 const QUICK = ["Beaucoup de piment","Sans piment","Peu de sel","Bien cuit","Saignant","Sans oignon","À emporter"];
-function add(id){
+function add(id, variant=""){
   const d = dishes.find(x=>x.id===id); if(!d) return;
-  const line = cart.find(l=>l.id===id);
-  line ? line.qty++ : cart.push({id, name:d.name, price:+d.price||0, image:d.image||"", qty:1, spec:""});
-  renderCart(); toast(`${d.name} ajouté`); openCart();
+  const line = cart.find(l=>l.id===id && (l.variant||"")===(variant||""));
+  line ? line.qty++ : cart.push({id, name:d.name, price:+d.price||0, image:d.image||"", qty:1, spec:"", variant:variant||""});
+  renderCart(); toast(`${d.name}${variant?" — "+variant:""} ajouté`); openCart();
 }
 function renderCart(){
   const n = cart.reduce((s,l)=>s+l.qty,0);
@@ -322,7 +341,7 @@ function renderCart(){
     <div class="li">
       ${l.image?`<img src="${l.image}" alt="${(l.name||'').replace(/"/g,'')}" />`:`<img alt="" />`}
       <div class="g">
-        <h4>${l.name}</h4>
+        <h4>${l.name}${l.variant?` <span style="color:var(--gold);font-size:14px;font-weight:400">— ${l.variant}</span>`:""}</h4>
         <div class="row">
           <span class="qty"><button data-m="${i}">−</button><span>${l.qty}</span><button data-p="${i}">+</button></span>
           <span class="price" style="font-size:18px">${money(l.qty*l.price)}</span>
@@ -355,7 +374,7 @@ $("#send").onclick = async () => {
   try{
     await addDoc(collection(db,"orders"),{
       table, note:($("#note").value||"").trim(), status:"nouvelle",
-      items: cart.map(l=>({dishId:l.id,name:l.name,price:l.price,qty:l.qty,spec:l.spec||"",image:l.image||""})),
+      items: cart.map(l=>({dishId:l.id,name:l.name,price:l.price,qty:l.qty,spec:l.spec||"",image:l.image||"",variant:l.variant||""})),
       itemsCount: cart.reduce((s,l)=>s+l.qty,0), total,
       createdAt: serverTimestamp(), createdAtMs: Date.now()
     });
