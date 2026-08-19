@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Restaurant Nicole — Carte interactive</title>
-<meta name="description" content="Carte interactive du Restaurant Nicole : commandez depuis votre table, ajoutez vos préférences (piment, cuisson) et validez en quelques secondes." />
-<meta property="og:title" content="Restaurant Nicole — Carte interactive" />
+<title>Restaurant Gustalia — Carte interactive</title>
+<meta name="description" content="Carte interactive du Restaurant Gustalia : commandez depuis votre table, ajoutez vos préférences (piment, cuisson) et validez en quelques secondes." />
+<meta property="og:title" content="Restaurant Gustalia — Carte interactive" />
 <meta property="og:description" content="Commandez depuis votre tablette : plats, photos, prix, descriptions et spécifications personnalisées." />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -29,7 +29,11 @@
   .shell{position:relative;z-index:2}
   header.nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
     padding:18px clamp(16px,4vw,48px);backdrop-filter:blur(14px);background:linear-gradient(to bottom,rgba(11,9,6,.75),rgba(11,9,6,0));}
-  .brand{font-family:var(--serif);font-size:22px;letter-spacing:.22em;text-transform:uppercase}
+  .brand{font-family:var(--serif);font-size:22px;letter-spacing:.22em;text-transform:uppercase;display:flex;align-items:center;gap:12px}
+  .brand-logo{height:38px;width:auto;display:block;border-radius:8px;cursor:zoom-in}
+  .lightbox{position:fixed;inset:0;z-index:65;display:none;place-items:center;background:rgba(6,5,3,.92);backdrop-filter:blur(10px);padding:24px;cursor:zoom-out}
+  .lightbox[data-on="1"]{display:grid}
+  .lightbox img{max-width:min(92vw,560px);max-height:86vh;border-radius:18px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.6)}
   .brand span{color:var(--gold)}
   .nav-actions{display:flex;gap:10px;align-items:center}
   .btn{border:1px solid var(--line);background:rgba(233,224,207,.04);color:var(--sand);
@@ -129,7 +133,7 @@
 <div class="grain"></div>
 
 <header class="nav">
-  <div class="brand">Nicole<span>.</span></div>
+  <div class="brand"><img class="brand-logo" id="brandLogo" src="logo.png" alt="Logo Gustalia" />Gustalia<span>.</span></div>
   <nav class="nav-actions">
     <button class="btn ghost" data-scroll="#carte">Carte</button>
     <button class="btn ember" id="openCart">Commande<span class="badge" id="cartCount">0</span></button>
@@ -162,7 +166,7 @@
   </section>
 
   <footer class="ft">
-    <span>Restaurant Nicole — commande en salle</span>
+    <span>Restaurant Gustalia — commande en salle</span>
     <span>Numéro de table : à côté du QR code sur votre table</span>
   </footer>
 </main>
@@ -198,6 +202,7 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="" /></div>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
@@ -362,6 +367,8 @@ function renderCart(){
 const openCart=()=>{$("#panel").dataset.on="1";$("#scrim").dataset.on="1";document.body.classList.add("locked");};
 const closeCart=()=>{$("#panel").dataset.on="0";$("#scrim").dataset.on="0";document.body.classList.remove("locked");};
 $("#openCart").onclick=openCart; $("#openCart2").onclick=openCart; $("#closeCart").onclick=closeCart; $("#scrim").onclick=closeCart;
+$("#brandLogo").onclick=()=>{$("#lightboxImg").src=$("#brandLogo").src; $("#lightbox").dataset.on="1";};
+$("#lightbox").onclick=()=>{$("#lightbox").dataset.on="0";};
 
 /* ------------------------------------------------------------------- ORDER */
 $("#send").onclick = async () => {
