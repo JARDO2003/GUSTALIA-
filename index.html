@@ -47,6 +47,8 @@
   .btn.ember{background:var(--ember);border-color:var(--ember);color:#fff}
   .btn.ember:hover{background:#fff;color:var(--ink);border-color:#fff}
   .btn.ghost:hover{background:rgba(233,224,207,.12);color:var(--sand)}
+  #openCart{display:none}
+  #openCart[data-visible="1"]{display:inline-flex;align-items:center}
   .badge{min-width:20px;height:20px;border-radius:999px;background:var(--gold);color:#1a1408;font-size:11px;font-weight:700;
     display:inline-flex;align-items:center;justify-content:center;padding:0 6px;margin-left:8px}
   /* HERO */
@@ -139,8 +141,15 @@
   .gate-card{width:min(420px,100%);text-align:center}
   .gate-logo{height:64px;width:auto;object-fit:contain;margin:0 auto 22px;display:block}
   .gate-card h2{font-family:var(--serif);font-weight:300;font-size:clamp(28px,6vw,40px);margin:0 0 10px;color:var(--sand)}
-  .gate-card>p{color:var(--sand-dim);font-size:14px;line-height:1.6;margin:0 0 26px}
-  .gate-card input{text-align:center;font-size:20px;letter-spacing:.08em;padding:16px;font-family:var(--serif)}
+  .gate-card>p{color:var(--sand);font-size:16px;font-weight:500;line-height:1.7;margin:0 0 26px}
+  .table-highlight{display:inline-block;color:var(--gold);font-weight:800;padding:2px 10px;border-radius:8px;
+    background:rgba(201,162,39,.16);border:1px solid rgba(201,162,39,.4);animation:blinkAttn 1.3s ease-in-out infinite}
+  @keyframes blinkAttn{0%,100%{opacity:1;box-shadow:0 0 0 rgba(201,162,39,0);background:rgba(201,162,39,.16)}
+    50%{opacity:.6;box-shadow:0 0 16px rgba(201,162,39,.85);background:rgba(201,162,39,.32)}}
+  .gate-card input{text-align:center;font-size:20px;letter-spacing:.08em;padding:16px;font-family:var(--serif);
+    animation:inputPulse 1.8s ease-in-out infinite}
+  @keyframes inputPulse{0%,100%{border-color:var(--line);box-shadow:0 0 0 rgba(201,162,39,0)}
+    50%{border-color:var(--gold);box-shadow:0 0 18px rgba(201,162,39,.45)}}
   .gate-card .hint{margin-top:14px}
   .gate-card button{width:100%;margin-top:18px}
   .ok{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(6,5,3,.92);backdrop-filter:blur(10px);text-align:center;padding:24px}
@@ -159,7 +168,7 @@
   <div class="gate-card">
     <img class="gate-logo" src="logo.png" alt="Logo Gustalia" onerror="this.style.display='none'" />
     <h2>Bienvenue chez Gustalia</h2>
-    <p>Pour commencer votre commande, renseignez votre numéro de table.</p>
+    <p>Pour commencer votre commande, renseignez votre <span class="table-highlight">numéro de table</span>.</p>
     <input id="gateTable" inputmode="numeric" placeholder="ex. 12" autofocus />
     <p class="hint">Votre <b>numéro de table</b> est indiqué <b>juste à côté du QR code</b> posé sur la table.</p>
     <button class="btn ember" id="gateSubmit">Accéder au menus</button>
@@ -410,6 +419,7 @@ function add(id, variant=""){
 function renderCart(){
   const n = cart.reduce((s,l)=>s+l.qty,0);
   $("#cartCount").textContent = n;
+  $("#openCart").dataset.visible = n > 0 ? "1" : "0";
   $("#total").textContent = money(cart.reduce((s,l)=>s+l.qty*l.price,0));
   $("#cartItems").innerHTML = cart.length ? cart.map((l,i)=>`
     <div class="li">
