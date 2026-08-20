@@ -115,6 +115,9 @@
   .li img{width:74px;height:74px;border-radius:14px;object-fit:cover;flex:none;background:#171208}
   .li .g{flex:1;min-width:0}
   .li h4{margin:0 0 4px;font-family:var(--serif);font-size:20px;font-weight:500}
+  .del-btn{border:0;background:none;color:var(--sand-dim);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    cursor:pointer;padding:4px 0 4px 12px;flex:none;transition:color .25s}
+  .del-btn:hover{color:var(--ember)}
   .qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden}
   .qty button{background:none;border:0;color:var(--sand);width:30px;height:30px;cursor:pointer;font-size:15px}
   .qty button:hover{background:rgba(233,224,207,.1)}
@@ -210,7 +213,7 @@
 
   <section id="carte">
     <div class="sec-head">
-      <h2>La carte</h2>
+      <h2>Nos menus</h2>
       <div class="cats" id="cats"></div>
     </div>
     <div class="grid" id="grid"></div>
@@ -433,7 +436,10 @@ function renderCart(){
     <div class="li">
       ${l.image?`<img src="${optImg(l.image,150)}" alt="${(l.name||'').replace(/"/g,'')}" loading="lazy" decoding="async" />`:`<img alt="" />`}
       <div class="g">
-        <h4>${l.name}${l.variant?` <span style="color:var(--gold);font-size:14px;font-weight:400">— ${l.variant}</span>`:""}</h4>
+        <div class="row" style="align-items:flex-start">
+          <h4>${l.name}${l.variant?` <span style="color:var(--gold);font-size:14px;font-weight:400">— ${l.variant}</span>`:""}</h4>
+          <button class="del-btn" data-x="${i}" aria-label="Supprimer">Supprimer</button>
+        </div>
         <div class="row">
           <span class="qty"><button data-m="${i}">−</button><span>${l.qty}</span><button data-p="${i}">+</button></span>
           <span class="price" style="font-size:18px">${money(l.qty*l.price)}</span>
@@ -444,6 +450,7 @@ function renderCart(){
   $("#cartItems").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const i=+b.dataset.m;
     cart[i].qty--; if(cart[i].qty<1) cart.splice(i,1); renderCart();});
   $("#cartItems").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{cart[+b.dataset.p].qty++;renderCart();});
+  $("#cartItems").querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{cart.splice(+b.dataset.x,1);renderCart();});
 }
 const openCart=()=>{$("#panel").dataset.on="1";$("#scrim").dataset.on="1";document.body.classList.add("locked");};
 const closeCart=()=>{$("#panel").dataset.on="0";$("#scrim").dataset.on="0";document.body.classList.remove("locked");};
